@@ -1,25 +1,92 @@
----
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
----
+#Course Project weeks2 for Reproducible Research
+Set global options
+```{R setoptions, echo=TRUE}
+knitr::opts_chunk$set(echo=TRUE)
+```
 
 
-## Loading and preprocessing the data
+reading data
+```{R}
+setwd("C:/rdata/repdata_data_activity")
+walk_na=read.csv(file="activity.csv",header=TRUE, sep=",")
+# remove NA
+walk<-na.omit(walk_na)
+```
 
+Calculate total for each day
+```{R}
+day<-aggregate(steps~date,walk,sum)
+```
 
+Show histogram for total number of steps each day
+```{R}
+hist(day$steps,xlab="counts of step")
+```
 
-## What is mean total number of steps taken per day?
+Calculate mean and median
+```{R}
+mean(day$steps)
+median(day$steps)
+```
+###Conclusion: Mean and median of counts of steps is very close to each other
 
+##Daily activity pattern
+calculate mean and show as time serie plot
+```{R}
+day_average<-aggregate(steps~interval,walk,mean)
+plot(day_average$interval,day_average$steps,type="l",xlab="interval",ylab="mean of daily steps")
+```
+find max interval with max average
+```{R}
+max_pos<-which(day_average$steps==max(day_average$steps))
+max_interval<-day_average[max_pos,1]
+max_interval
+```
+#imputing mising values
+##counts of missing values
+```{R}
+count_na<-sum(is.na(walk_na))
+count_na
+```
 
+I have choose to replace NA with mean
+```{R}
+# find NA value
+nas<-is.na(walk_na$steps)
+# calculate mean on steps
+avg_interval<-tapply(walk_na$steps,walk_na$interval,mean,na.rm=TRUE,simplify = TRUE)
+# replace NA with mean
+walk_na$steps[nas]<-avg_interval[as.character(walk_na$interval[nas])]
+```
+Calculate total for each day
+```{R}
+day<-aggregate(steps~date,walk_na,sum)
+```
 
-## What is the average daily activity pattern?
+Show histogram for total number of steps each day
+```{R}
+hist(day$steps,xlab="counts of step")
+```
 
+Calculate mean and median
+```{R}
+mean(day$steps)
+median(day$steps)
+```
+The impack of imputing is that both mean and median become 10776,19
 
+###activity weekdays vs weekend
+My R return weekdays() in Danish because I'm using danish language so I have to have weekdays in Danish 
+```{R}
+# create string that contains weekdays
+weekdays<-c("mandag","tirsdag","onsdag","torsdag","fredag")
+# test if date is a weekday or weekend
+walk_na$dow<-as.factor(ifelse(is.element(weekdays(as.Date(walk_na$date)),weekdays),"weekday","weekend"))
+# calcute mean
+wd<-aggregate(steps~dow+interval,data=walk_na,FUN=mean)
+# necessary to load
+library(lattice)
+xyplot(steps~interval|factor(dow),layout=c(1,2),type="l",lty=1,data=wd)
+```
 
-## Imputing missing values
-
-
-
-## Are there differences in activity patterns between weekdays and weekends?
+###Conclusion is that the person is walking more in weekends than weekday
